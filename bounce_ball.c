@@ -5,7 +5,6 @@
 #include <gui/view.h>
 #include <gui/view_dispatcher.h>
 #include <gui/modules/submenu.h>
-#include <gui/modules/text_input.h>
 #include <gui/modules/widget.h>
 #include <gui/modules/variable_item_list.h>
 
@@ -26,6 +25,69 @@ typedef enum {
     BB_SubmenuIndexGame,
     BB_SubmenuIndexAbout,
 } BB_SubmenuIndex;
+
+// A view is a screen the user can see
+typedef enum {
+    BB_ViewSubmenu, // Starting of the app
+    BB_ViewConfigure, // Config screen
+    BB_ViewGame, // The main screen
+    BB_ViewAbout, // The about screen
+} BB_View;
+
+typedef enum {
+    BB_EventIdRedrawScreen = 0, // Custom event to redraw
+    BB_EventIdOkPressed = 42, // Custom event to when OK button is pressed
+} BB_EventId;
+
+typedef struct {
+    ViewDispatcher* view_dispatcher; // Switch between views
+    NotificationApp* notifications; // Backlight controlls
+    Submenu* submenu; // App menu
+    VariableItemList* variable_item_list; // The config screen
+    View* view_game;
+    Widget* widget_about;
+    FuriTimer* timer; // Timer for redrawing screen
+} BB_App;
+
+typedef struct {
+    uint8_t x;
+    uint8_t y;
+} BB_BallGameModel;
+
+// Callback for exiting app. VIEW_NONE to indicate app should exit. Returns next view ID
+static uint32_t BB_navigation_exit_callback(void* context) {
+    UNUSED(context);
+    return VIEW_NONE;
+}
+
+static uint32_t BB_navigation_submenu_callback(void* context) {
+    UNUSED(context);
+    return BB_ViewSubmenu;
+}
+
+static uint32_t BB_navigation_configure_callback(void* context) {
+    UNUSED(context);
+    return BB_ViewConfigure;
+}
+
+// Handle submenu selection
+static void BB_submenu_callback(void* context, uint32_t index) {
+    BB_App* app = context;
+
+    switch(index) {
+    case BB_SubmenuIndexConfigure:
+        view_dispatcher_switch_to_view(app->view_dispatcher, BB_ViewConfigure);
+        break;
+    case BB_SubmenuIndexGame:
+        view_dispatcher_switch_to_view(app->view_dispatcher, BB_ViewGame);
+        break;
+    case BB_SubmenuIndexAbout:
+        view_dispatcher_switch_to_view(app->view_dispatcher, BB_ViewAbout);
+        break;
+    default:
+        break;
+    }
+}
 
 int32_t bounce_ball_app(void* p) {
     UNUSED(p);
